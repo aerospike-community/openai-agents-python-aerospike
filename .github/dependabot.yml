@@ -43,3 +43,13 @@ updates:
     open-pull-requests-limit: 5
     labels:
       - "dependencies"
+
+  - package-ecosystem: docker
+    directory: /examples/sandbox/docker
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: docker
+    directory: /examples/sandbox/tutorials
+    schedule:
+      interval: weekly
