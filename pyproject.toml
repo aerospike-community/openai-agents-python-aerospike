@@ -52,6 +52,7 @@ realtime = ["websockets>=15.0, <17"]
 sqlalchemy = ["SQLAlchemy[asyncio]>=2.0", "asyncpg>=0.29.0"]
 encrypt = ["cryptography>=45.0,<51"]
 redis = ["redis>=7"]
+aerospike = ["aerospike>=15"]
 dapr = [
     "dapr>=1.16.0",
     "grpcio>=1.60.0",
@@ -222,6 +223,10 @@ ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = ["vercel", "vercel.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["aerospike_helpers", "aerospike_helpers.*"]
 ignore_missing_imports = true
 
 [tool.coverage.run]
