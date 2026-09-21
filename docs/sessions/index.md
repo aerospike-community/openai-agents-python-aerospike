@@ -208,6 +208,7 @@ Use this table to pick a starting point before reading the detailed examples bel
 | `SQLAlchemySession` | Production apps with existing databases | Works with SQLAlchemy-supported databases |
 | `MongoDBSession` | Apps already using MongoDB or needing multi-process storage | Async pymongo; atomic sequence counter for ordering |
 | `DaprSession` | Cloud-native deployments with Dapr sidecars | Supports multiple state stores plus TTL and consistency controls |
+| `AerospikeSession` | Low-latency distributed deployments already using Aerospike | Single-record List CDT per session; atomic server-side operations, no client-side locking |
 | `OpenAIConversationsSession` | Server-managed storage in OpenAI | OpenAI Conversations API-backed history |
 | `OpenAIResponsesCompactionSession` | Long conversations with automatic compaction | Wrapper around another session backend |
 | `AdvancedSQLiteSession` | SQLite plus branching/analytics | Heavier feature set; see dedicated page |
@@ -457,6 +458,39 @@ Notes:
 -   Two collections are used and both names are configurable via `sessions_collection=` (default `agent_sessions`) and `messages_collection=` (default `agent_messages`). Indexes are created automatically on first use. Each non-empty `add_items()` call writes one logical-batch document whose monotonically increasing `seq` orders the batch by its final item; legacy per-item message documents remain readable. A logical batch must fit within MongoDB's single-document size limit; an oversized batch fails atomically without storing a partial batch.
 -   Use `await session.ping()` to verify connectivity before your first run.
 
+### Aerospike sessions
+
+Use `AerospikeSession` for shared, low-latency session memory when your application already runs Aerospike.
+
+```bash
+pip install openai-agents[aerospike]
+```
+
+```python
+from agents import Agent, Runner
+from agents.extensions.memory import AerospikeSession
+
+agent = Agent(name="Assistant")
+
+# Create from a client config dict — owns the client and closes it when
+# session.close() is called
+session = AerospikeSession.from_config(
+    "user-123",
+    config={"hosts": [("127.0.0.1", 3000)]},
+    namespace="test",
+)
+result = await Runner.run(agent, "Hello", session=session)
+print(result.final_output)
+await session.close()
+```
+
+Notes:
+
+-   `from_config(...)` creates and owns the `aerospike.Client` and closes it on `session.close()`. An owned-client session is terminal after `close()`, and subsequent session operations raise `RuntimeError`. If your application already manages a client, construct `AerospikeSession(...)` directly with `client=...`; in that case, `session.close()` is a no-op, the caller retains responsibility for the client lifecycle, and the session remains usable.
+-   Each session is one Aerospike record, keyed by `session_id`, holding a single List CDT bin (`items=`, default `"items"`) of serialized conversation items in chronological order. `add_items()`, `pop_item()`, and `clear_session()` each run as one atomic `operate()` call on that record, so no secondary index or client-side locking is required.
+-   Pass `ttl=<seconds>` to expire session records automatically; the namespace must have `nsup-period` enabled for the server to enforce it. Without `ttl`, session records never expire.
+-   Use `await session.ping()` to verify connectivity before your first run.
+
 ### Advanced SQLite sessions
 
 Enhanced SQLite sessions with conversation branching, usage analytics, and structured queries:
@@ -531,6 +565,7 @@ Use meaningful session IDs that help you organize conversations:
 -   Use SQLAlchemy-powered sessions (`SQLAlchemySession("session_id", engine=engine, create_tables=True)`) for production systems with existing databases supported by SQLAlchemy
 -   Use MongoDB sessions (`MongoDBSession.from_uri("session_id", uri="mongodb://localhost:27017")`) for applications already using MongoDB or needing multi-process, horizontally-scalable session storage
 -   Use Dapr state store sessions (`DaprSession.from_address("session_id", state_store_name="statestore", dapr_address="localhost:50001")`) for production cloud-native deployments with built-in telemetry, tracing, and data isolation and support for 30+ database backends
+-   Use Aerospike-backed sessions (`AerospikeSession.from_config("session_id", config={"hosts": [("127.0.0.1", 3000)]}, namespace="test")`) for shared, low-latency session memory when your application already runs Aerospike
 -   Use OpenAI-hosted storage (`OpenAIConversationsSession()`) when you prefer to store history in the OpenAI Conversations API
 -   Use encrypted sessions (`EncryptedSession(session_id, underlying_session, encryption_key)`) to wrap any session with transparent encryption and TTL-based expiration
 -   Consider implementing custom session backends for other production systems (for example, Django) for more advanced use cases
@@ -751,5 +786,6 @@ For detailed API documentation, see:
 -   [`SQLAlchemySession`][agents.extensions.memory.sqlalchemy_session.SQLAlchemySession] - SQLAlchemy-powered implementation
 -   [`MongoDBSession`][agents.extensions.memory.mongodb_session.MongoDBSession] - MongoDB-backed session implementation
 -   [`DaprSession`][agents.extensions.memory.dapr_session.DaprSession] - Dapr state store implementation
+-   [`AerospikeSession`][agents.extensions.memory.aerospike_session.AerospikeSession] - Aerospike-backed session implementation
 -   [`AdvancedSQLiteSession`][agents.extensions.memory.advanced_sqlite_session.AdvancedSQLiteSession] - Enhanced SQLite with branching and analytics
 -   [`EncryptedSession`][agents.extensions.memory.encrypt_session.EncryptedSession] - Encrypted wrapper for any session
