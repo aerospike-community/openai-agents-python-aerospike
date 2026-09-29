@@ -9,8 +9,6 @@ Start a server with::
 
     docker run -d --ulimit nofile=20000:20000 -p 3000:3000 \\
         -e "NAMESPACE=test" aerospike/aerospike-server:latest
-
-See AERO_VALIDATION.md at the repo root for a full manual walkthrough.
 """
 
 from __future__ import annotations
@@ -230,7 +228,7 @@ async def test_ping_against_real_server(client: aerospike.Client, session_id: st
 
 
 async def test_from_config_owns_and_closes_its_own_client(session_id: str) -> None:
-    session = AerospikeSession.from_config(
+    session = await AerospikeSession.from_config(
         session_id,
         config={"hosts": [(AEROSPIKE_HOST, AEROSPIKE_PORT)]},
         namespace=AEROSPIKE_NAMESPACE,

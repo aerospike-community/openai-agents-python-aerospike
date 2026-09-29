@@ -9,7 +9,7 @@ Usage::
     from agents.extensions.memory import AerospikeSession
 
     # Create from a client config dict
-    session = AerospikeSession.from_config(
+    session = await AerospikeSession.from_config(
         session_id="user-123",
         config={"hosts": [("127.0.0.1", 3000)]},
         namespace="test",
@@ -130,7 +130,7 @@ class AerospikeSession(SessionABC):
     # ------------------------------------------------------------------
 
     @classmethod
-    def from_config(
+    async def from_config(
         cls,
         session_id: str,
         *,
@@ -140,6 +140,9 @@ class AerospikeSession(SessionABC):
         **kwargs: Any,
     ) -> AerospikeSession:
         """Create a session from an Aerospike client config dict.
+
+        The blocking cluster connection is performed in a worker thread so the
+        event loop is not stalled while the client connects.
 
         Args:
             session_id: Conversation ID.
@@ -154,7 +157,7 @@ class AerospikeSession(SessionABC):
             An [`AerospikeSession`][agents.extensions.memory.aerospike_session.AerospikeSession]
                 connected to the specified Aerospike cluster.
         """
-        client = aerospike.client(config).connect()
+        client = await asyncio.to_thread(lambda: aerospike.client(config).connect())
         session = cls(
             session_id,
             client=client,

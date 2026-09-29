@@ -4,7 +4,7 @@ All tests run without a real Aerospike server — or even the ``aerospike``
 package — by injecting a lightweight fake client and fake CDT list-operation
 helpers into ``sys.modules`` before the module under test is imported. The
 fake reproduces exactly the server behavior observed against a real
-Aerospike CE container (see AERO_VALIDATION.md): ``list_append_items``
+Aerospike CE container: ``list_append_items``
 auto-creates the record; ``list_get_range``, ``list_pop``, and ``list_clear``
 raise ``RecordNotFound`` on a missing record; ``list_pop`` on an empty list
 raises ``OpNotApplicable``; ``list_get_range`` on an empty list returns
@@ -564,25 +564,27 @@ async def test_close_owned_client_is_closed() -> None:
         "client",
         return_value=fake_client,
     ):
-        s = AerospikeSession.from_config("owned", config={"hosts": []}, namespace="test")
+        s = await AerospikeSession.from_config("owned", config={"hosts": []}, namespace="test")
         assert s._owns_client is True
 
         await s.close()
         assert fake_client._closed
 
 
-def _make_owned_session(session_id: str = "owned") -> AerospikeSession:
+async def _make_owned_session(session_id: str = "owned") -> AerospikeSession:
     with patch.object(
         aerospike_session_module.aerospike,  # type: ignore[attr-defined]
         "client",
         return_value=FakeAerospikeClient(),
     ):
-        return AerospikeSession.from_config(session_id, config={"hosts": []}, namespace="test")
+        return await AerospikeSession.from_config(
+            session_id, config={"hosts": []}, namespace="test"
+        )
 
 
 async def test_closed_operations_raise_runtime_error() -> None:
     """Operations on a closed session must fail instead of running against a released client."""
-    session = _make_owned_session()
+    session = await _make_owned_session()
     await session.add_items([{"role": "user", "content": "hi"}])
     await session.close()
 
@@ -600,7 +602,7 @@ async def test_closed_operations_raise_runtime_error() -> None:
 
 async def test_closed_rejects_empty_add_items() -> None:
     """add_items([]) must not bypass the closed check through the empty-list fast path."""
-    session = _make_owned_session()
+    session = await _make_owned_session()
     await session.close()
 
     with pytest.raises(RuntimeError, match="^AerospikeSession is closed$"):
@@ -609,7 +611,7 @@ async def test_closed_rejects_empty_add_items() -> None:
 
 async def test_repeated_close_remains_safe() -> None:
     """Repeated close() calls must remain safe for callers."""
-    session = _make_owned_session()
+    session = await _make_owned_session()
 
     await session.close()
     await session.close()
@@ -642,7 +644,7 @@ async def test_from_config_forwards_config_and_kwargs() -> None:
         "client",
         side_effect=_fake_client_factory,
     ):
-        session = AerospikeSession.from_config(
+        session = await AerospikeSession.from_config(
             "owned",
             config={"hosts": [("127.0.0.1", 3000)]},
             namespace="test",
