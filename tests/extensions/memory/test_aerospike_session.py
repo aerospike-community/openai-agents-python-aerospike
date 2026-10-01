@@ -3,16 +3,12 @@
 All tests run without a real Aerospike server — or even the ``aerospike``
 package — by injecting a lightweight fake client and fake CDT list-operation
 helpers into ``sys.modules`` before the module under test is imported. The
-fake reproduces exactly the server behavior observed against a real
-Aerospike CE container: ``list_append_items``
-auto-creates the record; ``list_get_range``, ``list_pop``, and ``list_clear``
-raise ``RecordNotFound`` on a missing record; ``list_pop`` on an empty list
-raises ``OpNotApplicable``; ``list_get_range`` on an empty list returns
-``[]``.
-
-Real-server behavior (Docker CE) is covered separately by
-test_aerospike_session_integration.py, which skips when no server is
-reachable.
+fake reproduces the server behavior observed manually against Aerospike CE
+8.1.2.4 with client 19.2.2: ``list_append_items`` auto-creates the record;
+``list_get_range``, ``list_pop``, and ``list_clear`` raise ``RecordNotFound``
+on a missing record; ``list_pop`` on an empty list raises ``OpNotApplicable``;
+``list_get_range`` on an empty list returns ``[]``. Re-verify against a real
+server when upgrading the client.
 """
 
 from __future__ import annotations
