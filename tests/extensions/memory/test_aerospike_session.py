@@ -493,11 +493,9 @@ async def test_pop_item_uses_overridden_deserialize_item(session: AerospikeSessi
 
 async def test_default_ttl_never_expires(session: AerospikeSession) -> None:
     """Without an explicit ttl, writes must use TTL_NEVER_EXPIRE."""
-    import aerospike
-
     await session.add_items([{"role": "user", "content": "x"}])
     fake_client: FakeAerospikeClient = session._client
-    assert fake_client._last_write_meta == {"ttl": aerospike.TTL_NEVER_EXPIRE}
+    assert fake_client._last_write_meta == {"ttl": _FAKE_TTL_NEVER_EXPIRE}
 
 
 async def test_explicit_ttl_is_forwarded() -> None:

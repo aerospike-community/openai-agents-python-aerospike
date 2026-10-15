@@ -362,6 +362,9 @@
     }
   ],
   "optional_dependencies": {
+    "aerospike": {
+      "extra": "aerospike"
+    },
     "aiohttp": {
       "extra": "cloudflare"
     },
@@ -402,6 +405,7 @@
   "modules": {
     "agents.extensions.memory": {
       "optional_bindings": {
+        "AerospikeSession": "aerospike",
         "AsyncSQLiteSession": "aiosqlite",
         "DAPR_CONSISTENCY_EVENTUAL": "dapr",
         "DAPR_CONSISTENCY_STRONG": "dapr",
