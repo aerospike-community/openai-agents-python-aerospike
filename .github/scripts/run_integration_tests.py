@@ -491,7 +491,10 @@ def main() -> None:
             python = create_environment(
                 environment_kind,
                 wheel,
-                additional_requirements=(f"mcp=={mcp_version}",),
+                additional_requirements=(
+                    f"mcp=={mcp_version}",
+                    *(("pydantic<2.14",) if mcp_version == "1.19.0" else ()),
+                ),
             )
             run_suite(
                 python,
