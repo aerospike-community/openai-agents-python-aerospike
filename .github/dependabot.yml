@@ -29,6 +29,7 @@ updates:
     directories:
       - "/examples/realtime/twilio"
       - "/examples/realtime/twilio_sip"
+      - /examples/live/app
     schedule:
       interval: "weekly"
     cooldown:
@@ -54,3 +55,13 @@ updates:
     open-pull-requests-limit: 5
     labels:
       - "dependencies"
+
+  - package-ecosystem: docker
+    directory: /examples/sandbox/docker
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: docker
+    directory: /examples/sandbox/tutorials
+    schedule:
+      interval: weekly
